@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini ZAP — Security Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2035;
+            --bg-card-hover: #1f2847;
+            --bg-input: #0d1322;
+            --border: #1e2a45;
+            --border-focus: #3b82f6;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-orange: #f97316;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --gradient-1: linear-gradient(135deg, #3b82f6, #06b6d4);
+            --gradient-2: linear-gradient(135deg, #8b5cf6, #ec4899);
+            --gradient-3: linear-gradient(135deg, #f97316, #ef4444);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.4);
+            --shadow-glow: 0 0 20px rgba(59,130,246,0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ─── Animated Background ─── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── Header ─── */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10,14,26,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+        }
+
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: var(--gradient-1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 0 20px rgba(59,130,246,0.3);
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-badge {
+            font-size: 0.65rem;
+            background: rgba(59,130,246,0.15);
+            color: var(--accent-blue);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            border: 1px solid rgba(59,130,246,0.2);
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(16,185,129,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ─── Main Layout ─── */
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ─── Scan Bar ─── */
+        .scan-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .scan-bar h2 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .scan-form {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .scan-input-group {
+            flex: 1;
+            position: relative;
+        }
+
+        .scan-input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .scan-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+
+        .scan-input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .method-select {
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 100px;
+            transition: all 0.2s;
+        }
+
+        .method-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .scan-body-input {
+            flex: 0.5;
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .scan-body-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+
+        .scan-btn {
+            padding: 14px 28px;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .scan-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+        }
+
+        .scan-btn:active { transform: translateY(0); }
+
+        .scan-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .scan-btn .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .scan-btn.loading .spinner { display: block; }
+        .scan-btn.loading .btn-text { display: none; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── Stats Grid ─── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card:hover::before { opacity: 1; }
+        .stat-card:nth-child(1)::before { background: var(--gradient-1); }
+        .stat-card:nth-child(2)::before { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+        .stat-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent-yellow), var(--accent-orange)); }
+        .stat-card:nth-child(4)::before { background: var(--gradient-3); }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .stat-card:nth-child(1) .stat-value { color: var(--accent-blue); }
+        .stat-card:nth-child(2) .stat-value { color: var(--accent-green); }
+        .stat-card:nth-child(3) .stat-value { color: var(--accent-yellow); }
+        .stat-card:nth-child(4) .stat-value { color: var(--accent-red); }
+
+        /* ─── Tabs ─── */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 4px;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover { color: var(--text-primary); }
+
+        .tab.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .tab-badge {
+            font-size: 0.7rem;
+            background: rgba(59,130,246,0.15);
+            color: var(--accent-blue);
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .tab.active .tab-badge {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        /* ─── Tables ─── */
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .table-panel { display: none; }
+        .table-panel.active { display: block; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background: rgba(0,0,0,0.3);
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody td {
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(30,42,69,0.5);
+            vertical-align: top;
+        }
+
+        tbody tr {
+            transition: all 0.15s;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-card-hover);
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        .method-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .method-GET { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+        .method-POST { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+        .method-PUT { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
+        .method-DELETE { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+
+        .severity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .severity-critical { background: rgba(139,92,246,0.15); color: var(--accent-purple); }
+        .severity-high { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .severity-medium { background: rgba(249,115,22,0.15); color: var(--accent-orange); }
+        .severity-low { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
+
+        .scan-type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .scan-passive { background: rgba(6,182,212,0.15); color: var(--accent-cyan); }
+        .scan-active { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+
+        .url-cell {
+            max-width: 350px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+        }
+
+        .desc-cell {
+            max-width: 400px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .time-cell {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .status-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .status-2xx { color: var(--accent-green); }
+        .status-3xx { color: var(--accent-cyan); }
+        .status-4xx { color: var(--accent-orange); }
+        .status-5xx { color: var(--accent-red); }
+
+        .action-btn {
+            padding: 6px 14px;
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 8px;
+            color: var(--accent-blue);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .action-btn:hover {
+            background: rgba(59,130,246,0.2);
+            border-color: var(--accent-blue);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ─── Empty State ─── */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .empty-state-text { font-size: 0.9rem; }
+
+        /* ─── Toast / Notification ─── */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            max-width: 400px;
+        }
+
+        .toast-success { background: rgba(16,185,129,0.95); color: white; }
+        .toast-error { background: rgba(239,68,68,0.95); color: white; }
+        .toast-info { background: rgba(59,130,246,0.95); color: white; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ─── Scan Result Modal ─── */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px; height: 32px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+
+        .modal-body { padding: 1.5rem; }
+
+        .modal-finding {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-finding:last-child { margin-bottom: 0; }
+
+        .finding-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.5rem;
+        }
+
+        .finding-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .finding-evidence {
+            margin-top: 0.5rem;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            word-break: break-all;
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .scan-form { flex-direction: column; }
+            .scan-body-input { flex: 1; }
+            .main { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <div class="header-inner">
+        <div class="logo">
+            <div class="logo-icon">🛡️</div>
+            <span class="logo-text">Mini ZAP</span>
+            <span class="logo-badge">POC v0.1</span>
+        </div>
+        <div class="header-status">
+            <div class="status-dot"></div>
+            <span>System Online</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+    <!-- Scan Bar -->
+    <section class="scan-bar">
+        <h2>🎯 Quick Scan</h2>
+        <div class="scan-form">
+            <select class="method-select" id="scanMethod">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+            <div class="scan-input-group">
+                <span class="scan-input-icon">🔗</span>
+                <input type="text" class="scan-input" id="scanUrl"
+                    placeholder="http://localhost:3000/api/users?id=1" />
+            </div>
+            <input type="text" class="scan-body-input" id="scanBody"
+                placeholder='POST body (JSON): {"key":"value"}' />
+            <button class="scan-btn" id="scanBtn" onclick="runScan()">
+                <div class="spinner"></div>
+                <span class="btn-text">⚡ Scan</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Requests</div>
+            <div class="stat-value" id="statRequests">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Passive Findings</div>
+            <div class="stat-value" id="statPassive">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active Findings</div>
+            <div class="stat-value" id="statActive">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">High / Critical</div>
+            <div class="stat-value" id="statHigh">0</div>
+        </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('logs', this)">
+            📋 Request Logs <span class="tab-badge" id="tabLogsCount">0</span>
+        </button>
+        <button class="tab" onclick="switchTab('vulns', this)">
+            🔴 Vulnerabilities <span class="tab-badge" id="tabVulnsCount">0</span>
+        </button>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container">
+        <!-- Logs Table -->
+        <div class="table-panel active" id="panel-logs">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Method</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="logsBody">
+                    <tr><td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📡</div>
+                            <div class="empty-state-text">No requests captured yet. Enter a URL above to scan.</div>
+                        </div>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Vulnerabilities Table -->
+        <div class="table-panel" id="panel-vulns">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Severity</th>
+                        <th>Rule</th>
+                        <th>Description</th>
+                        <th>Log #</th>
+                    </tr>
+                </thead>
+                <tbody id="vulnsBody">
+                    <tr><td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">✅</div>
+                            <div class="empty-state-text">No vulnerabilities detected yet.</div>
+                        </div>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Scan Result Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">Active Scan Results</h3>
+            <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('active')">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    const API = '';  // Same origin
+
+    // ─── Toast Notifications ──────────────────────────────────
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+        toast.innerHTML = `<span>${icons[type] || ''}</span><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(50px)';
+            toast.style.transition = 'all 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // ─── Tab Switch ───────────────────────────────────────────
+    function switchTab(tab, btn) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.table-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`panel-${tab}`).classList.add('active');
+    }
+
+    // ─── Format Time ──────────────────────────────────────────
+    function formatTime(ts) {
+        const d = new Date(ts);
+        return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // ─── Status Code Class ────────────────────────────────────
+    function statusClass(code) {
+        if (code >= 200 && code < 300) return 'status-2xx';
+        if (code >= 300 && code < 400) return 'status-3xx';
+        if (code >= 400 && code < 500) return 'status-4xx';
+        return 'status-5xx';
+    }
+
+    // ─── Severity Icon ────────────────────────────────────────
+    function sevIcon(sev) {
+        const icons = { critical: '💀', high: '🔴', medium: '🟠', low: '🟡' };
+        return icons[sev] || '⚪';
+    }
+
+    // ─── Load Data ────────────────────────────────────────────
+    async function loadData() {
+        try {
+            const [logsRes, vulnsRes] = await Promise.all([
+                fetch(`${API}/logs/?limit=200`),
+                fetch(`${API}/vulnerabilities/?limit=500`)
+            ]);
+
+            const logs = await logsRes.json();
+            const vulns = await vulnsRes.json();
+
+            // Stats
+            const passiveCount = vulns.filter(v => v.scan_type === 'passive').length;
+            const activeCount = vulns.filter(v => v.scan_type === 'active').length;
+            const highCount = vulns.filter(v => v.severity === 'high' || v.severity === 'critical').length;
+
+            document.getElementById('statRequests').textContent = logs.length;
+            document.getElementById('statPassive').textContent = passiveCount;
+            document.getElementById('statActive').textContent = activeCount;
+            document.getElementById('statHigh').textContent = highCount;
+            document.getElementById('tabLogsCount').textContent = logs.length;
+            document.getElementById('tabVulnsCount').textContent = vulns.length;
+
+            // Logs table
+            const logsBody = document.getElementById('logsBody');
+            if (logs.length === 0) {
+                logsBody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📡</div><div class="empty-state-text">No requests captured yet.</div></div></td></tr>`;
+            } else {
+                logsBody.innerHTML = logs.reverse().map(log => `
+                    <tr>
+                        <td><strong>#${log.id}</strong></td>
+                        <td><span class="method-badge method-${log.method}">${log.method}</span></td>
+                        <td class="url-cell" title="${log.url}">${log.url}</td>
+                        <td><span class="status-code ${statusClass(log.status_code)}">${log.status_code || '—'}</span></td>
+                        <td class="time-cell">${formatTime(log.timestamp)}</td>
+                        <td><button class="action-btn" onclick="runActiveScan(${log.id})">⚡ Active Scan</button></td>
+                    </tr>
+                `).join('');
+            }
+
+            // Vulns table
+            const vulnsBody = document.getElementById('vulnsBody');
+            if (vulns.length === 0) {
+                vulnsBody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No vulnerabilities detected yet.</div></div></td></tr>`;
+            } else {
+                vulnsBody.innerHTML = vulns.reverse().map(v => `
+                    <tr>
+                        <td><strong>#${v.id}</strong></td>
+                        <td><span class="scan-type-badge scan-${v.scan_type}">${v.scan_type}</span></td>
+                        <td><span class="severity-badge severity-${v.severity}">${sevIcon(v.severity)} ${v.severity.toUpperCase()}</span></td>
+                        <td><strong>${v.rule_name}</strong></td>
+                        <td class="desc-cell">${v.description}</td>
+                        <td><a href="#" onclick="event.preventDefault(); switchTab('logs', document.querySelector('.tab'))" style="color:var(--accent-cyan)">#${v.request_log_id}</a></td>
+                    </tr>
+                `).join('');
+            }
+        } catch (e) {
+            console.error('Failed to load data:', e);
+        }
+    }
+
+    // ─── Quick Scan ───────────────────────────────────────────
+    async function runScan() {
+        const url = document.getElementById('scanUrl').value.trim();
+        const method = document.getElementById('scanMethod').value;
+        const bodyStr = document.getElementById('scanBody').value.trim();
+        const btn = document.getElementById('scanBtn');
+
+        if (!url) {
+            showToast('Please enter a URL to scan', 'error');
+            return;
+        }
+
+        btn.classList.add('loading');
+        btn.disabled = true;
+
+        try {
+            // Step 1: Fetch target via backend proxy endpoint
+            showToast(`Scanning ${url}...`, 'info');
+
+            const scanResp = await fetch(`${API}/scan/quick`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, method, body: bodyStr || null })
+            });
+
+            if (!scanResp.ok) {
+                const err = await scanResp.json();
+                throw new Error(err.detail || 'Scan failed');
+            }
+
+            const result = await scanResp.json();
+            showToast(`Scan complete! Found ${result.passive_count + result.active_count} issue(s)`, 'success');
+
+            // Show results modal if active findings
+            if (result.active_findings && result.active_findings.length > 0) {
+                showScanModal(url, result);
+            }
+
+            await loadData();
+        } catch (e) {
+            showToast(`Scan failed: ${e.message}`, 'error');
+        } finally {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+    }
+
+    // ─── Active Scan (from table) ─────────────────────────────
+    async function runActiveScan(logId) {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = '⏳ Scanning...';
+
+        try {
+            const resp = await fetch(`${API}/scan/active/${logId}`, { method: 'POST' });
+            const findings = await resp.json();
+
+            if (findings.length > 0) {
+                showToast(`Active scan found ${findings.length} issue(s)!`, 'error');
+                showActiveScanModal(logId, findings);
+            } else {
+                showToast('Active scan: No vulnerabilities found', 'success');
+            }
+
+            await loadData();
+        } catch (e) {
+            showToast(`Active scan failed: ${e.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '⚡ Active Scan';
+        }
+    }
+
+    // ─── Modals ───────────────────────────────────────────────
+    function showScanModal(url, result) {
+        const overlay = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = `Scan Results — ${result.passive_count + result.active_count} findings`;
+
+        let html = '';
+        const allFindings = [...(result.passive_findings || []), ...(result.active_findings || [])];
+
+        allFindings.forEach(f => {
+            html += `
+                <div class="modal-finding">
+                    <div class="finding-header">
+                        <span class="severity-badge severity-${f.severity}">${sevIcon(f.severity)} ${f.severity.toUpperCase()}</span>
+                        <span class="scan-type-badge scan-${f.scan_type}">${f.scan_type}</span>
+                        <strong>${f.rule_name}</strong>
+                    </div>
+                    <div class="finding-desc">${f.description}</div>
+                    ${f.evidence ? `<div class="finding-evidence">${f.evidence}</div>` : ''}
+                </div>
+            `;
+        });
+
+        if (allFindings.length === 0) {
+            html = '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No vulnerabilities found.</div></div>';
+        }
+
+        body.innerHTML = html;
+        overlay.classList.add('active');
+    }
+
+    function showActiveScanModal(logId, findings) {
+        const overlay = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = `Active Scan — Log #${logId} — ${findings.length} findings`;
+
+        body.innerHTML = findings.map(f => `
+            <div class="modal-finding">
+                <div class="finding-header">
+                    <span class="severity-badge severity-${f.severity}">${sevIcon(f.severity)} ${f.severity.toUpperCase()}</span>
+                    <strong>${f.rule_name}</strong>
+                </div>
+                <div class="finding-desc">${f.description}</div>
+                ${f.evidence ? `<div class="finding-evidence">${f.evidence}</div>` : ''}
+            </div>
+        `).join('');
+
+        overlay.classList.add('active');
+    }
+
+    function closeModal(e) {
+        if (e.target === e.currentTarget) {
+            e.target.classList.remove('active');
+        }
+    }
+
+    // ─── Init ─────────────────────────────────────────────────
+    loadData();
+    setInterval(loadData, 5000);  // Auto-refresh every 5s
+
+    // Enter key to scan
+    document.getElementById('scanUrl').addEventListener('keydown', e => {
+        if (e.key === 'Enter') runScan();
+    });
+</script>
+
+</body>
+</html>
